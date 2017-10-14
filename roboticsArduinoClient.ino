@@ -6,22 +6,25 @@
 int avaliableDigitalPins[8] = {0,1,2,4,5,6,7,10};
 int avaliableAnaloguePins[2] = {2,3};
 
+//Before a request is received , the command char will be receive. Used to determine the data to send back.
+//0 -> 13 is for digital pins 100 -> 105 for analogue pins
+int requestCommand = -1;
+
 void setup() 
 {
   Serial.begin(9600);
   Serial.println("Started");
   
   Wire.begin(SLAVE_ADDRESS); // this will begin I2C Connection with 0x40 address
-  Wire.onReceive(runCommand); // sendData is funtion called when Pi requests data
+  Wire.onReceive(onReceiveCallback); // onReceiveCallback is funtion called when Pi sends data
+  Wire.onRequest(onRequestCallback);
 
   pinMode(8,OUTPUT);       //Channel A Brake Pin Initialize
   pinMode(9,OUTPUT);       //Channel B Brake Pin Initialize 
   pinMode(12,OUTPUT);      //Channel A Direction Pin Initialize
   pinMode(13,OUTPUT);      //Channel B Direction Pin Initialize
   pinMode(3,OUTPUT);      //Channel A Power Pin Initialize
-  pinMode(11,OUTPUT);      //Channel B Power Pin Initialize
-  
-  
+  pinMode(11,OUTPUT);      //Channel B Power Pin Initialize  
 }
 
 //Negative for reverse. Value from 0-255 to indicate power.
@@ -56,7 +59,7 @@ void setDigitalPinCommand(int mode, String command)
   digitalWrite(command.toInt(), mode);
 }
 
-void runCommand(int numBytes)
+void onReceiveCallback(int numBytes)
 {
   Serial.println("Receive Message");
   String command = readCommand(numBytes);
@@ -84,7 +87,28 @@ void runCommand(int numBytes)
     case 'b':
       setMotorPower(1, commandEnd);
       break;
+    default:
+      requestCommand = command[0];
+      break;
   }
+}
+
+void onRequestCallback()
+{
+  //If the command has been set
+  if (requestCommand != -1)
+  {
+    //Reading digital pins
+    if(requestCommand < 100) 
+    {
+      Wire.write(digitalRead(requestCommand));
+    }
+    //Reads Analogue pins
+    else
+    {
+      Wire.write(analogRead(requestCommand - 100));
+    }
+  }  
 }
 
 String readCommand(int numBytes)
@@ -102,4 +126,3 @@ void loop()
 {
   delay(1000);
 }
-
