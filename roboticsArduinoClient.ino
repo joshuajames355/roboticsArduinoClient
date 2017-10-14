@@ -9,6 +9,8 @@ int avaliableAnaloguePins[2] = {2,3};
 void setup() 
 {
   Serial.begin(9600);
+  Serial.println("Started");
+  
   Wire.begin(SLAVE_ADDRESS); // this will begin I2C Connection with 0x40 address
   Wire.onReceive(runCommand); // sendData is funtion called when Pi requests data
 
@@ -23,9 +25,9 @@ void setup()
 }
 
 //Negative for reverse. Value from 0-255 to indicate power.
-void setMotorPower(int numBytes, int motorNumber)
+void setMotorPower(int motorNumber, String command)
 {
-  int power = readNumber(numBytes);
+  int power = command.toInt();
   if (motorNumber == 0) //Channel A
   {
     //Sets direction
@@ -44,54 +46,58 @@ void setMotorPower(int numBytes, int motorNumber)
   }
 }
 
-void setPinModeCommand(int numBytes, int mode)
+void setPinModeCommand(int mode, String command)
 {
-  pinMode(readNumber(numBytes), mode);
+  pinMode(command.toInt(), mode);
 }
 
-void setDigitalPinCommand(int numBytes, int mode)
+void setDigitalPinCommand(int mode, String command)
 {
-  digitalWrite(readNumber(numBytes), mode);
-}
-
-
-int readNumber(int numBytes)
-{
-  int pinNumber;
-  for (int x = numBytes - 1; x >= 0; x--)
-  {
-    pinNumber += (Wire.read() - '0') * pow(10,x);
-
-  }
-  return pinNumber;
+  digitalWrite(command.toInt(), mode);
 }
 
 void runCommand(int numBytes)
 {
-  char commandType = Wire.read();
-  switch (commandType)
+  Serial.println("Receive Message");
+  String command = readCommand(numBytes);
+
+  //The command string without the first character. Passed to the seperate functions to handle
+  //Any required additional information for each commmand.
+  String commandEnd = command.substring(1);
+  switch (command[0])
   {
     case 'i':
-      setPinModeCommand(numBytes - 1, INPUT);
+      setPinModeCommand(INPUT, commandEnd);
       break;
     case 'o':
-      setPinModeCommand(numBytes - 1, OUTPUT);
+      setPinModeCommand(OUTPUT, commandEnd);
       break;
     case 'h':
-      setDigitalPinCommand(numBytes - 1, HIGH);
+      setDigitalPinCommand(HIGH, commandEnd);
       break;
     case 'l':
-      setDigitalPinCommand(numBytes - 1, LOW);
+      setDigitalPinCommand(LOW, commandEnd);
       break;
     case 'a':
-      setMotorPower(numBytes - 1, 0);
+      setMotorPower(0, commandEnd);
       break;
     case 'b':
-      setMotorPower(numBytes - 1, 1);
+      setMotorPower(1, commandEnd);
       break;
   }
 }
 
+String readCommand(int numBytes)
+{
+  String message = "";
+  for(int x = 0; x < numBytes; x++)
+  {
+    message += (char)Wire.read();
+  }
+  Serial.println(message);
+  return message;
+}
+ 
 void loop() 
 {
   delay(1000);
