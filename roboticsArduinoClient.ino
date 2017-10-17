@@ -59,6 +59,13 @@ void setDigitalPinCommand(int mode, String command)
   digitalWrite(command.toInt(), mode);
 }
 
+void setAnalogPinCommand(String command)
+{
+  int pin = command.substring(0,command.indexOf('-')).toInt();
+  int pwm = command.substring(command.indexOf('-')+1).toInt();
+  analogWrite(pin,pwm);
+}
+
 void onReceiveCallback(int numBytes)
 {
   Serial.println("Receive Message");
@@ -86,6 +93,9 @@ void onReceiveCallback(int numBytes)
       break;
     case 'b':
       setMotorPower(1, commandEnd);
+      break;
+    case 'p':
+      setAnalogPinCommand(commandEnd);
       break;
     default:
       requestCommand = command[0];

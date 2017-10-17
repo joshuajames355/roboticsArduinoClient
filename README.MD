@@ -15,6 +15,7 @@ It currently can set the power and mode of digital pins , send the power of all 
 * l [pinNumber] //set a digit pin to low
 * a [power] //sets the power of the motor on channel A
 * b [power] //sets the power of the motor on channel B
+* p [pinNumber] - [power] //sets the power of the pwm pin
 	
 ## Requesting pin power 
 	
